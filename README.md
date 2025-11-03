@@ -1,3 +1,4 @@
+Esempio presentazione: https://www.genspark.ai/agents?id=b4832924-8a9d-4b54-9dfe-d11e2cf55209
 https://ludovica-montanaro.gitbook.io/esercitazione-con-keras/
 
 
@@ -93,4 +94,5 @@ Assicurati di avere Python ≥ 3.10 e di installare le dipendenze:
 
 ```bash
 pip install -r requirements.txt
+
 ```
