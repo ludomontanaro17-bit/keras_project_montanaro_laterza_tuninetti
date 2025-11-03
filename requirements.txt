@@ -1,0 +1,9 @@
+pandas
+joblib
+matplotlib
+seaborn
+scikit-learn
+flask
+tensorflow
+numpy
+huggingface_hub

@@ -15,7 +15,7 @@ Questo progetto è diviso in due fasi principali:
 - Si addestra il modello Keras (WineQualityNeuralNet).
 - Al termine, il modello e lo scaler vengono salvati nella cartella /model:
     - model/wine_quality_model.keras → il modello addestrato
-    - model/scaler.pkl               → lo scaler usato per la normalizzazione
+    - model/scaler.pkl → lo scaler usato per la normalizzazione
   Questi file rappresentano la pipeline "congelata" del sistema.
 
 👉 Questa fase si esegue manualmente solo quando si vuole
@@ -49,19 +49,102 @@ Se arrivano nuovi dati o si vuole migliorare la performance:
 
 ────────────────────────────────────────────────────────────
 💡 In sintesi:
-- main.py  → crea e salva il modello addestrato (offline)
-- app.py   → lo carica e lo rende disponibile via API (online)
+- main.py → crea e salva il modello addestrato (offline)
+- app.py → lo carica e lo rende disponibile via API (online)
 ────────────────────────────────────────────────────────────
 '''
 
 
-from WineAPI import WineAPI
+import numpy as np
+from classes.Dataloader import DataLoader
+import matplotlib.pyplot as plt
+import seaborn as sns
+from classes.Model import WineQualityNeuralNet
+from classes.Datapreprocessing import DataPreprocessing
 
 if __name__ == "__main__":
-    api = WineAPI(
-        model_path="../model/wine_quality_model.keras",
-        scaler_path="../model/scaler.pkl"
-    )
-    api.run()
 
+    ### STEP 1: Caricamento dati dal repository Hugging Face ###
+    data_loader = DataLoader()
+    X, y = data_loader.load_data()
 
+    # Stampa le prime righe dei dati caricati
+    print("\nPrime 5 righe del dataset caricato:")
+    print(X.head())
+    print("\nPrime 5 etichette del target:")
+    print(y.head())
+
+    ### STEP 2: Analisi esplorativa dataset ###
+    
+    
+    # >>>>> MAPPATURA IN 3 CLASSI <<<<<
+    def map_quality_to_class(quality):
+        if quality <= 4:
+            return 0  # basso
+        elif quality <= 6:
+            return 1  # medio
+        else:
+            return 2  # alto
+
+    y = y.apply(map_quality_to_class)
+    print("✅ Etichette originali:", sorted(y.unique()))
+    print("✅ Etichette dopo mappatura (0=basso, 1=medio, 2=alto):", sorted(y.unique()))
+    # <<<<< FINE MAPPATURA >>>>>
+
+    # Combina X e y in un DataFrame → AGGIUNGI 'quality' qui!
+    df = X.copy()
+    df['quality'] = y  # ← QUESTA RIGA ERA MANCANTE!
+
+    ## STEP 2: Analisi esplorativa dataset ###
+
+    # Inizializza la classe di preprocessing
+    preprocessing = DataPreprocessing(df, target_column='quality')
+    
+    # Mostra informazioni generali e statistiche sul dataset
+    preprocessing.display_info()
+    preprocessing.display_statistics()
+    preprocessing.display_missing_values()
+
+    ### STEP 2.2: Visualizzazioni grafiche distribuzioni ###
+    preprocessing.plot_quality_distribution()
+
+    ### STEP 2.3: Stampiamo la matrice di correlazione ###
+    plt.figure(figsize=(12, 10))
+    correlation = df.corr()
+    sns.heatmap(correlation, annot=True, cmap='coolwarm', fmt='.2f')
+    plt.title('Matrice di Correlazione delle Caratteristiche del Vino')
+    plt.show()
+
+    ### STEP 3 DATA PREPROCESSING ###
+    # Standardizza le caratteristiche numeriche
+    preprocessing.standardize_numeric_features()
+
+    ### Rimozione delle variabili collineari ###
+    X_reduced = preprocessing.remove_collinear_features()
+
+    # Aggiorna il dataframe interno con le feature ridotte (per lo split)
+    preprocessing_reduced = DataPreprocessing(X_reduced, target_column='quality')
+    # Standardizza di nuovo sul dataset ridotto (necessario per coerenza)
+    preprocessing_reduced.standardize_numeric_features()
+    # Suddividi il dataset in training e validation set
+    X_train, X_val, y_train, y_val = preprocessing_reduced.split_data()
+
+    ### STEP 4 - Creazione e addestramento del modello di rete neurale ###
+    model = WineQualityNeuralNet(num_classes=3)
+    model.build(input_dim=X_train.shape[1])
+
+    # Allena il modello
+    history = model.train(X_train, y_train, X_val, y_val, epochs=50, batch_size=32)
+
+    model.evaluate(X_val, y_val)
+
+    # Predizioni sul validation set
+    y_pred = model.predict_classes(X_val)
+
+    # Report di classificazione
+    print("\n📊 Report di classificazione:")
+    from sklearn.metrics import classification_report
+    print(classification_report(y_val, y_pred))
+
+    # Salva il modello nel percorso corretto
+    model.save("model/wine_quality_model.keras")

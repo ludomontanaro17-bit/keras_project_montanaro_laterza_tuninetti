@@ -1,15 +1,21 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+import joblib
+import os
+
 from sklearn.preprocessing import StandardScaler
+
 
 class DataPreprocessing:
     def __init__(self, dataframe, target_column):
         self.dataframe = dataframe
         self.target_column = target_column
+        self.X = dataframe.drop(columns=[target_column])  # ← AGGIUNTO
+        self.y = dataframe[target_column]                 # ← AGGIUNTO
         self.scaler = StandardScaler()
+        self.X = self.dataframe.drop(columns=[self.target_column])
+        self.y = self.dataframe[self.target_column]
     
     def display_info(self):
         """Mostra informazioni sul dataset."""
@@ -53,29 +59,68 @@ class DataPreprocessing:
             plt.grid(axis='y', linestyle='--', alpha=0.7)
             plt.tight_layout()
             plt.show()
+    
+    def remove_collinear_features(self, threshold=0.6):
+        """Rimuove le variabili collineari usando una soglia specificata."""
+        df_corr = self.dataframe.copy()
+        corr = df_corr.corr(numeric_only=True)
 
+        to_drop = set()
+        cols = self.dataframe.drop(columns=[self.target_column]).columns
+
+        for i in range(len(cols)):
+            for j in range(i + 1, len(cols)):
+                corr_val = corr.loc[cols[i], cols[j]]
+                if abs(corr_val) > threshold:
+                    corr_with_y_i = abs(corr.loc[cols[i], self.target_column])
+                    corr_with_y_j = abs(corr.loc[cols[j], self.target_column])
+                    if corr_with_y_i < corr_with_y_j:
+                        to_drop.add(cols[i])
+                    else:
+                        to_drop.add(cols[j])
+                    print(f"⚠️  {cols[i]} e {cols[j]} sono correlate (ρ = {corr_val:.2f}). "
+                          f"Rimuovo '{cols[i] if corr_with_y_i < corr_with_y_j else cols[j]}' "
+                          f"perché meno correlata con '{self.target_column}'.")
+
+        print("\n📉 Variabili da rimuovere per collinearità:")
+        print(sorted(to_drop))
+
+        X_reduced = self.dataframe.drop(columns=list(to_drop))
+        print("\n📊 Variabili rimaste dopo la rimozione:")
+        print(list(X_reduced.columns))
+
+        return X_reduced
+    
     def standardize_numeric_features(self):
-        """Standardizza automaticamente tutte le colonne numeriche."""
-        numerical_features = self.dataframe.select_dtypes(include=['int64', 'float64']).columns
+        """Standardizza automaticamente tutte le colonne numeriche e salva lo scaler per uso futuro."""
+        numerical_features = self.X.select_dtypes(include=['int64', 'float64']).columns
+
         if len(numerical_features) > 0:
-            self.dataframe[numerical_features] = self.scaler.fit_transform(self.dataframe[numerical_features])
-            print("Standardizzazione completata per le seguenti colonne numeriche:", list(numerical_features))
+            # Fit e trasformazione
+            self.X[numerical_features] = self.scaler.fit_transform(self.X[numerical_features])
+            # Aggiorna il dataframe completo
+            self.dataframe = self.X.copy()
+            self.dataframe[self.target_column] = self.y
+            print("✅ Standardizzazione completata per le seguenti colonne numeriche:", list(numerical_features))
+
+            # 🔹 Salvataggio dello scaler in locale per uso con l'API di Flask
+            model_dir = os.path.join("model")
+            os.makedirs(model_dir, exist_ok=True)
+            scaler_path = os.path.join(model_dir, "scaler.pkl")
+            joblib.dump(self.scaler, scaler_path)
+            print(f"💾 Scaler salvato in: {scaler_path}")
+
         else:
-            print("Nessuna colonna numerica trovata per la standardizzazione.")
+            print("⚠️ Nessuna colonna numerica trovata per la standardizzazione.")
 
     def split_data(self, test_size=0.2, random_state=42):
         """Suddivide il dataset in training e validation set."""
-        X = self.dataframe.drop(columns=[self.target_column])
-        y = self.dataframe[self.target_column]
+        X = self.X
+        y = self.y
         
         X_train, X_val, y_train, y_val = train_test_split(
             X, y, test_size=test_size, random_state=random_state, stratify=y
         )
         
-        print(f"Suddivisione completata: 
-              {len(X_train)} campioni per il training e {len(X_val)} per la validazione.")
+        print(f"Suddivisione completata: {len(X_train)} campioni per il training e {len(X_val)} per la validazione.")
         return X_train, X_val, y_train, y_val
-        
-    
-
-
