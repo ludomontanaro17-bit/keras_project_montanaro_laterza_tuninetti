@@ -1,15 +1,18 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+import joblib
+import os
+
 
 class DataPreprocessing:
     def __init__(self, dataframe, target_column):
         self.dataframe = dataframe
         self.target_column = target_column
         self.scaler = StandardScaler()
+        self.X = self.dataframe.drop(columns=[self.target_column])
+        self.y = self.dataframe[self.target_column]
     
     def display_info(self):
         """Mostra informazioni sul dataset."""
@@ -87,9 +90,6 @@ class DataPreprocessing:
     
     def standardize_numeric_features(self):
         """Standardizza automaticamente tutte le colonne numeriche e salva lo scaler per uso futuro."""
-        import joblib
-        import os
-
         numerical_features = self.dataframe.select_dtypes(include=['int64', 'float64']).columns
 
         if len(numerical_features) > 0:
