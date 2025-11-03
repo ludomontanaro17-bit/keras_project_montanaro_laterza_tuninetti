@@ -1,7 +1,5 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import joblib
 import os
@@ -13,6 +11,8 @@ class DataPreprocessing:
         self.X = dataframe.drop(columns=[target_column])  # ← AGGIUNTO
         self.y = dataframe[target_column]                 # ← AGGIUNTO
         self.scaler = StandardScaler()
+        self.X = self.dataframe.drop(columns=[self.target_column])
+        self.y = self.dataframe[self.target_column]
     
     def display_info(self):
         """Mostra informazioni sul dataset."""

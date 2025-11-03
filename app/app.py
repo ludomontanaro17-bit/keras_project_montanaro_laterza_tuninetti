@@ -55,8 +55,6 @@ Se arrivano nuovi dati o si vuole migliorare la performance:
 '''
 
 
-
-
 from WineAPI import WineAPI
 
 if __name__ == "__main__":
