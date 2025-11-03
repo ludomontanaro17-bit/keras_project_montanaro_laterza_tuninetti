@@ -106,14 +106,16 @@ if __name__ == "__main__":
     preprocessing.display_missing_values()
 
     ### STEP 2.2: Visualizzazioni grafiche distribuzioni ###
-    preprocessing.plot_quality_distribution()
+    # preprocessing.plot_quality_distribution()
 
     ### STEP 2.3: Stampiamo la matrice di correlazione ###
+    '''
     plt.figure(figsize=(12, 10))
     correlation = df.corr()
     sns.heatmap(correlation, annot=True, cmap='coolwarm', fmt='.2f')
     plt.title('Matrice di Correlazione delle Caratteristiche del Vino')
     plt.show()
+    '''
 
     ### STEP 3 DATA PREPROCESSING ###
     # Standardizza le caratteristiche numeriche

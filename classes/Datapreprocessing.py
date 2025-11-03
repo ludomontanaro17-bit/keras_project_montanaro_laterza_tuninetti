@@ -34,6 +34,7 @@ class DataPreprocessing:
         print("\nConteggio dei valori nulli:")
         print(self.X.isnull().sum().sort_values(ascending=False))
 
+
     def plot_quality_distribution(self):
         """Visualizza la distribuzione della qualità del vino."""
         plt.figure(figsize=(10, 6))
