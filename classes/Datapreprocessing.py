@@ -3,12 +3,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+import joblib
+import os
 
 class DataPreprocessing:
     def __init__(self, dataframe, target_column):
         self.dataframe = dataframe
         self.target_column = target_column
+        self.X = dataframe.drop(columns=[target_column])  # ← AGGIUNTO
+        self.y = dataframe[target_column]                 # ← AGGIUNTO
         self.scaler = StandardScaler()
     
     def display_info(self):
@@ -87,14 +90,14 @@ class DataPreprocessing:
     
     def standardize_numeric_features(self):
         """Standardizza automaticamente tutte le colonne numeriche e salva lo scaler per uso futuro."""
-        import joblib
-        import os
-
-        numerical_features = self.dataframe.select_dtypes(include=['int64', 'float64']).columns
+        numerical_features = self.X.select_dtypes(include=['int64', 'float64']).columns
 
         if len(numerical_features) > 0:
             # Fit e trasformazione
-            self.dataframe[numerical_features] = self.scaler.fit_transform(self.dataframe[numerical_features])
+            self.X[numerical_features] = self.scaler.fit_transform(self.X[numerical_features])
+            # Aggiorna il dataframe completo
+            self.dataframe = self.X.copy()
+            self.dataframe[self.target_column] = self.y
             print("✅ Standardizzazione completata per le seguenti colonne numeriche:", list(numerical_features))
 
             # 🔹 Salvataggio dello scaler in locale per uso con l'API di Flask
@@ -109,8 +112,8 @@ class DataPreprocessing:
 
     def split_data(self, test_size=0.2, random_state=42):
         """Suddivide il dataset in training e validation set."""
-        X = self.dataframe.drop(columns=[self.target_column])
-        y = self.dataframe[self.target_column]
+        X = self.X
+        y = self.y
         
         X_train, X_val, y_train, y_val = train_test_split(
             X, y, test_size=test_size, random_state=random_state, stratify=y
@@ -118,8 +121,3 @@ class DataPreprocessing:
         
         print(f"Suddivisione completata: {len(X_train)} campioni per il training e {len(X_val)} per la validazione.")
         return X_train, X_val, y_train, y_val
-        
-    
-
-
-

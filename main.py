@@ -76,9 +76,26 @@ if __name__ == "__main__":
 
     ### STEP 2: Analisi esplorativa dataset ###
     
-    # Combina X e y in un DataFrame
+    
+    # >>>>> MAPPATURA IN 3 CLASSI <<<<<
+    def map_quality_to_class(quality):
+        if quality <= 4:
+            return 0  # basso
+        elif quality <= 6:
+            return 1  # medio
+        else:
+            return 2  # alto
+
+    y = y.apply(map_quality_to_class)
+    print("✅ Etichette originali:", sorted(y.unique()))
+    print("✅ Etichette dopo mappatura (0=basso, 1=medio, 2=alto):", sorted(y.unique()))
+    # <<<<< FINE MAPPATURA >>>>>
+
+    # Combina X e y in un DataFrame → AGGIUNGI 'quality' qui!
     df = X.copy()
-    df['quality'] = y  # aggiungi la colonna target
+    df['quality'] = y  # ← QUESTA RIGA ERA MANCANTE!
+
+    ## STEP 2: Analisi esplorativa dataset ###
 
     # Inizializza la classe di preprocessing
     preprocessing = DataPreprocessing(df, target_column='quality')
@@ -105,35 +122,29 @@ if __name__ == "__main__":
     ### Rimozione delle variabili collineari ###
     X_reduced = preprocessing.remove_collinear_features()
 
+    # Aggiorna il dataframe interno con le feature ridotte (per lo split)
+    preprocessing_reduced = DataPreprocessing(X_reduced, target_column='quality')
+    # Standardizza di nuovo sul dataset ridotto (necessario per coerenza)
+    preprocessing_reduced.standardize_numeric_features()
     # Suddividi il dataset in training e validation set
-    X_train, X_val, y_train, y_val = preprocessing.split_data()
-
+    X_train, X_val, y_train, y_val = preprocessing_reduced.split_data()
 
     ### STEP 4 - Creazione e addestramento del modello di rete neurale ###
-    model = WineQualityNeuralNet(num_classes=len(np.unique(y_train)))
+    model = WineQualityNeuralNet(num_classes=3)
     model.build(input_dim=X_train.shape[1])
 
     # Allena il modello
     history = model.train(X_train, y_train, X_val, y_val, epochs=50, batch_size=32)
+
+    model.evaluate(X_val, y_val)
 
     # Predizioni sul validation set
     y_pred = model.predict_classes(X_val)
 
     # Report di classificazione
     print("\n📊 Report di classificazione:")
+    from sklearn.metrics import classification_report
+    print(classification_report(y_val, y_pred))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # Salva il modello nel percorso corretto
+    model.save("model/wine_quality_model.keras")
