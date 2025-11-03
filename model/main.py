@@ -47,46 +47,12 @@ if __name__ == "__main__":
     # Standardizza le caratteristiche numeriche
     preprocessing.standardize_numeric_features()
 
+    ### Rimozione delle variabili collineari ###
+    X_reduced = preprocessing.remove_collinear_features()
+
     # Suddividi il dataset in training e validation set
     X_train, X_val, y_train, y_val = preprocessing.split_data()
 
-    ### Rimozione delle variabili collineari ###
-    # Calcola la matrice di correlazione (Pearson)
-    corr = df.corr(numeric_only=True)
-    threshold = 0.6
-    to_drop = set()
-    cols = X.columns
-    
-    for i in range(len(cols)):
-        for j in range(i + 1, len(cols)):
-            corr_val = corr.loc[cols[i], cols[j]]
-            if abs(corr_val) > threshold:
-                corr_with_y_i = abs(corr.loc[cols[i], 'quality'])
-                corr_with_y_j = abs(corr.loc[cols[j], 'quality'])
-                if corr_with_y_i < corr_with_y_j:
-                    to_drop.add(cols[i])
-                else:
-                    to_drop.add(cols[j])
-                print(f"⚠️  {cols[i]} e {cols[j]} sono correlate (ρ = {corr_val:.2f}). "
-                      f"Rimuovo '{cols[i] if corr_with_y_i < corr_with_y_j else cols[j]}' "
-                      f"perché meno correlata con 'quality'.")
-
-    # Mostra il risultato
-    print("\n📉 Variabili da rimuovere per collinearità:")
-    print(sorted(to_drop))
-
-    # Crea una versione ridotta di X
-    X_reduced = X.drop(columns=list(to_drop))
-    df_pair = X_reduced.copy()
-    df_pair['quality'] = y
-
-    print("\n📊 Variabili rimaste dopo la rimozione:")
-    print(list(X_reduced.columns))
-
-    print("\n📈 Pair Plot delle caratteristiche rimanenti:")
-    sns.pairplot(df_pair, hue='quality', palette='viridis')
-    plt.title('Pair Plot delle Caratteristiche del Vino')
-    plt.show()
 
     ### STEP 4 - Creazione e addestramento del modello di rete neurale ###
     model = WineQualityNeuralNet(num_classes=len(np.unique(y_train)))

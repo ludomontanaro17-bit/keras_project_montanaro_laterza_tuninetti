@@ -53,7 +53,38 @@ class DataPreprocessing:
             plt.grid(axis='y', linestyle='--', alpha=0.7)
             plt.tight_layout()
             plt.show()
+    
+    def remove_collinear_features(self, threshold=0.6):
+        """Rimuove le variabili collineari usando una soglia specificata."""
+        df_corr = self.dataframe.copy()
+        corr = df_corr.corr(numeric_only=True)
 
+        to_drop = set()
+        cols = self.dataframe.drop(columns=[self.target_column]).columns
+
+        for i in range(len(cols)):
+            for j in range(i + 1, len(cols)):
+                corr_val = corr.loc[cols[i], cols[j]]
+                if abs(corr_val) > threshold:
+                    corr_with_y_i = abs(corr.loc[cols[i], self.target_column])
+                    corr_with_y_j = abs(corr.loc[cols[j], self.target_column])
+                    if corr_with_y_i < corr_with_y_j:
+                        to_drop.add(cols[i])
+                    else:
+                        to_drop.add(cols[j])
+                    print(f"⚠️  {cols[i]} e {cols[j]} sono correlate (ρ = {corr_val:.2f}). "
+                          f"Rimuovo '{cols[i] if corr_with_y_i < corr_with_y_j else cols[j]}' "
+                          f"perché meno correlata con '{self.target_column}'.")
+
+        print("\n📉 Variabili da rimuovere per collinearità:")
+        print(sorted(to_drop))
+
+        X_reduced = self.dataframe.drop(columns=list(to_drop))
+        print("\n📊 Variabili rimaste dopo la rimozione:")
+        print(list(X_reduced.columns))
+
+        return X_reduced
+    
     def standardize_numeric_features(self):
         """Standardizza automaticamente tutte le colonne numeriche."""
         numerical_features = self.dataframe.select_dtypes(include=['int64', 'float64']).columns
