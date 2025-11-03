@@ -6,12 +6,23 @@ import os
 
 class WineAPI:
     def __init__(self, model_path="../model/wine_quality_model.keras", scaler_path="../model/scaler.pkl"):
-        """Inizializza il server Flask e carica modello e scaler."""
+        """Inizializza il server Flask e carica modello, scaler e feature attese."""
         self.app = Flask(__name__)
         self.model_path = model_path
         self.scaler_path = scaler_path
         self.model = None
         self.scaler = None
+
+        # 🔹 Le feature effettive usate nel training (ordine corretto)
+        self.expected_features = [
+            "volatile acidity",
+            "citric acid",
+            "residual sugar",
+            "chlorides",
+            "total sulfur dioxide",
+            "sulphates",
+            "alcohol"
+        ]
 
         # Caricamento automatico all'avvio
         self._load_model()
@@ -41,27 +52,42 @@ class WineAPI:
 
         @self.app.route("/", methods=["GET"])
         def home():
-            return jsonify({"message": "API Keras per classificazione vino pronta 🚀"})
+            return jsonify({
+                "message": "API Keras per classificazione vino pronta 🚀",
+                "expected_features": self.expected_features
+            })
 
         @self.app.route("/predict", methods=["POST"])
         def predict():
             data = request.get_json()
 
             if not data or "features" not in data:
-                return jsonify({"error": "JSON non valido. Usa 'features': [valori...]"}), 400
+                return jsonify({
+                    "error": "JSON non valido. Usa 'features': [valori...]",
+                    "expected_features": self.expected_features
+                }), 400
 
             features = np.array(data["features"]).reshape(1, -1)
+
+            # ✅ Controllo numero di feature
+            if features.shape[1] != len(self.expected_features):
+                return jsonify({
+                    "error": f"Numero di feature errato: atteso {len(self.expected_features)}, ricevuto {features.shape[1]}",
+                    "expected_order": self.expected_features
+                }), 400
 
             # Applica scaler se disponibile
             if self.scaler:
                 features = self.scaler.transform(features)
 
+            # Predizione
             prediction = self.model.predict(features)
             predicted_class = int(np.argmax(prediction, axis=1)[0])
 
             return jsonify({
                 "predicted_class": predicted_class,
-                "probabilities": prediction.tolist()[0]
+                "probabilities": prediction.tolist()[0],
+                "expected_features": self.expected_features
             })
 
     # ====== AVVIO SERVER ======
