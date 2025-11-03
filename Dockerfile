@@ -13,4 +13,4 @@ RUN mkdir -p model
 
 EXPOSE 5000
 
-CMD ["python", "api.py"]
+CMD ["python", "app.py"]
