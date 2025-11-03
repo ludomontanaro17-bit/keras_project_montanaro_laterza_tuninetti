@@ -1,13 +1,17 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
   wine-api:
-    build: .
+    build:
+      context: .           # directory del progetto
+      dockerfile: Dockerfile
+    container_name: wine_api
     ports:
-      - "5000:5000"
+      - "5000:5000"        # mappa la porta Flask
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app    # garantisce gli import dai moduli classes/
     volumes:
-      - ./model:/app/model  # ← monta la cartella model dalla root
+      - ./model:/app/model # monta la cartella dei modelli (per aggiornare scaler o .keras senza rebuild)
+    command: python app/WineAPI.py

@@ -5,7 +5,7 @@ import joblib
 import os
 
 class WineAPI:
-    def __init__(self, model_path="../model/wine_quality_model.keras", scaler_path="../model/scaler.pkl"):
+    def __init__(self, model_path="model/wine_quality_model.keras", scaler_path="model/scaler.pkl"):
         """Inizializza il server Flask e carica modello, scaler e feature attese."""
         self.app = Flask(__name__)
         self.model_path = model_path
@@ -93,3 +93,10 @@ class WineAPI:
     # ====== AVVIO SERVER ======
     def run(self, host="0.0.0.0", port=5000, debug=True):
         self.app.run(host=host, port=port, debug=debug)
+
+
+
+
+if __name__ == "__main__":
+    api = WineAPI()
+    api.run(host="0.0.0.0", port=5000)

@@ -2,9 +2,8 @@ pandas
 joblib
 matplotlib
 seaborn
-sklearn
+scikit-learn
 flask
 tensorflow
 numpy
 huggingface_hub
-os
