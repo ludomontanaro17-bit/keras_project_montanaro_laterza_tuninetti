@@ -86,13 +86,26 @@ class DataPreprocessing:
         return X_reduced
     
     def standardize_numeric_features(self):
-        """Standardizza automaticamente tutte le colonne numeriche."""
+        """Standardizza automaticamente tutte le colonne numeriche e salva lo scaler per uso futuro."""
+        import joblib
+        import os
+
         numerical_features = self.dataframe.select_dtypes(include=['int64', 'float64']).columns
+
         if len(numerical_features) > 0:
+            # Fit e trasformazione
             self.dataframe[numerical_features] = self.scaler.fit_transform(self.dataframe[numerical_features])
-            print("Standardizzazione completata per le seguenti colonne numeriche:", list(numerical_features))
+            print("✅ Standardizzazione completata per le seguenti colonne numeriche:", list(numerical_features))
+
+            # 🔹 Salvataggio dello scaler in locale per uso con l'API di Flask
+            model_dir = os.path.join("model")
+            os.makedirs(model_dir, exist_ok=True)
+            scaler_path = os.path.join(model_dir, "scaler.pkl")
+            joblib.dump(self.scaler, scaler_path)
+            print(f"💾 Scaler salvato in: {scaler_path}")
+
         else:
-            print("Nessuna colonna numerica trovata per la standardizzazione.")
+            print("⚠️ Nessuna colonna numerica trovata per la standardizzazione.")
 
     def split_data(self, test_size=0.2, random_state=42):
         """Suddivide il dataset in training e validation set."""
@@ -103,8 +116,7 @@ class DataPreprocessing:
             X, y, test_size=test_size, random_state=random_state, stratify=y
         )
         
-        print(f"Suddivisione completata: 
-              {len(X_train)} campioni per il training e {len(X_val)} per la validazione.")
+        print(f"Suddivisione completata: {len(X_train)} campioni per il training e {len(X_val)} per la validazione.")
         return X_train, X_val, y_train, y_val
         
     
